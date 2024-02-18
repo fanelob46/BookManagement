@@ -42,19 +42,24 @@ namespace BooksMvc.Controllers
                UserName = registerUser.UserName
                 
             };
-            var result = await _userManager.CreateAsync(user, registerUser.Password);
-            if (result.Succeeded)
+            if(await _roleManager.RoleExistsAsync(role))
             {
-                return StatusCode(StatusCodes.Status201Created,
-                   new Response { Status = "Error", Messange = "User Created Successfully!" });
+                var result = await _userManager.CreateAsync(user,registerUser.Password);
+                if (!result.Succeeded)
+                {
+                    return StatusCode(StatusCodes.Status500InternalServerError,
+                        new Response { Status = "Error", Messange = "User fail to create" });
+                }
+                ///Add role to user
+                await _userManager.AddToRoleAsync(user, role);
+                return StatusCode(StatusCodes.Status200OK,
+                       new Response { Status = "Success", Messange = "User created succesfully" });
             }
             else
             {
                 return StatusCode(StatusCodes.Status500InternalServerError,
-                   new Response { Status = "Error", Messange = "User failed to be created!" });
+                       new Response { Status = "Error", Messange = "the role doesnt exist" });
             }
-            //Assign a role
-
         }
     }
 }
