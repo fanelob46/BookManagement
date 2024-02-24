@@ -2,32 +2,38 @@
 using BooksMvc.Models;
 using BooksMvc.Models.Aunthetication.Login;
 using BooksMvc.Models.Aunthetication.SignUp;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
+using System.ComponentModel.DataAnnotations;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using UserManagement.Models;
+using UserManagement.Services;
 using JwtRegisteredClaimNames = Microsoft.IdentityModel.JsonWebTokens.JwtRegisteredClaimNames;
 
 namespace BooksMvc.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/[controller]/[action]")]
     [ApiController]
     public class AuntheticateController : ControllerBase
     {
         private readonly UserManager<IdentityUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
         private IConfiguration _configuration;
+        private readonly IEmailService _emailService;
         public AuntheticateController(UserManager<IdentityUser> userManager, 
-            RoleManager<IdentityRole> roleManager, IConfiguration configuration)
+            RoleManager<IdentityRole> roleManager, IConfiguration configuration, IEmailService emailService)
         {
             _roleManager = roleManager;
 
             _configuration = configuration;
             _userManager = userManager;
+            _emailService = emailService;
 
         }
 
@@ -68,6 +74,7 @@ namespace BooksMvc.Controllers
                        new Response { Status = "Error", Messange = "the role doesnt exist" });
             }
         }
+       
         [HttpPost]
         [Route("Login")]
         public async Task<IActionResult> Login([FromBody] LoginUser loginUser)
@@ -95,7 +102,25 @@ namespace BooksMvc.Controllers
             }
             return Unauthorized();
         }
+        [HttpPost]
+        [AllowAnonymous]
+       // [ApiExplorerSettings(IgnoreApi = true)]
 
+        public async Task<IActionResult> ForgotPassword([Required] string email)
+        {
+            var user = await _userManager.FindByEmailAsync(email);
+            if (user != null)
+            {
+                var token = await _userManager.FindByEmailAsync(email);
+                var ForgotPasswordlink = Url.Action("ResetPassword", "Auntheticate", new { token, email = user.Email }, Request.Scheme);
+                var message = new Message(new string[] { user.Email! }, "Forgot password link", ForgotPasswordlink!);
+                _emailService.SendEmail(message);
+                return StatusCode(StatusCodes.Status200OK,
+                       new Response { Status = "Success", Messange = $"Password change request is sent {user.Email}" });
+            }
+            return StatusCode(StatusCodes.Status400BadRequest,
+                       new Response { Status = "Error", Messange = $"Could send link " });
+        }
         private JwtSecurityToken GetToken(List<Claim> authClaims)
         {
             var authSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JWT:Secret"]));
