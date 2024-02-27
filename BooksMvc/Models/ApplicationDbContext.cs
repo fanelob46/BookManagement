@@ -15,7 +15,7 @@ namespace BooksMvc.Models
             base.OnModelCreating(builder);
             SeedRoles(builder);
         }
-
+        public DbSet<Book> Books { get; set; }
         private static void SeedRoles(ModelBuilder builder)
         {
             builder.Entity<IdentityRole>().HasData

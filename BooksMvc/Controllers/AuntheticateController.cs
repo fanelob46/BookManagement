@@ -6,9 +6,12 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.VisualStudio.Web.CodeGenerators.Mvc.Templates.BlazorIdentity.Pages;
 using System.ComponentModel.DataAnnotations;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -19,153 +22,142 @@ using JwtRegisteredClaimNames = Microsoft.IdentityModel.JsonWebTokens.JwtRegiste
 
 namespace BooksMvc.Controllers
 {
-    [Route("api/[controller]/[action]")]
-    [ApiController]
-    public class AuntheticateController : ControllerBase
+    /*[Route("api/[controller]/[action]")]
+    [ApiController]*/
+    public class AuntheticateController : Controller
     {
         private readonly UserManager<IdentityUser> _userManager;
-        private readonly RoleManager<IdentityRole> _roleManager;
-        private IConfiguration _configuration;
+        private readonly SignInManager<IdentityUser> _signInManager;
         private readonly IEmailService _emailService;
-        public AuntheticateController(UserManager<IdentityUser> userManager, 
-            RoleManager<IdentityRole> roleManager, IConfiguration configuration, IEmailService emailService)
-        {
-            _roleManager = roleManager;
 
-            _configuration = configuration;
+        public AuntheticateController(UserManager<IdentityUser> userManager,
+                              SignInManager<IdentityUser> signInManager ,IEmailService emailService)
+        {
             _userManager = userManager;
+            _signInManager = signInManager;
             _emailService = emailService;
 
         }
 
+
+
+        public IActionResult Register() { return View(); }
         [HttpPost]
-        public async  Task<IActionResult> Register([FromBody] RegisterUser registerUser , string role)
+        public async Task<IActionResult> Register(RegisterUser model)
         {
-            //Check if the user exist
-            var userExist = await _userManager.FindByEmailAsync(registerUser.Email);
-            if (userExist != null)
+            if (ModelState.IsValid)
             {
-                return StatusCode(StatusCodes.Status403Forbidden,
-                    new Response { Status = "Error", Messange = "User already exists!" });
-            }
-            //add user to database
-            IdentityUser user = new()
-            { 
-               Email = registerUser.Email,
-               SecurityStamp = Guid.NewGuid().ToString(),
-               UserName = registerUser.UserName
-                
-            };
-            if(await _roleManager.RoleExistsAsync(role))
-            {
-                var result = await _userManager.CreateAsync(user,registerUser.Password);
-                if (!result.Succeeded)
+                var user = new IdentityUser
                 {
-                    return StatusCode(StatusCodes.Status500InternalServerError,
-                        new Response { Status = "Error", Messange = "User fail to create" });
-                }
-                ///Add role to user
-                await _userManager.AddToRoleAsync(user, role);
-                return StatusCode(StatusCodes.Status200OK,
-                       new Response { Status = "Success", Messange = "User created succesfully" });
-            }
-            else
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError,
-                       new Response { Status = "Error", Messange = "the role doesnt exist" });
-            }
-        }
-       
-        [HttpPost]
-        [Route("Login")]
-        public async Task<IActionResult> Login([FromBody] LoginUser loginUser)
-        {
-            //checking the user
-            var user = await _userManager.FindByNameAsync(loginUser.Username);
-            if(user!=null && await _userManager.CheckPasswordAsync(user,loginUser.Password)) 
-            {
-                var authClaims = new List<Claim>
-                {
-                    new Claim(ClaimTypes.Name, user.UserName),
-                    new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                    UserName = model.Email,
+                    Email = model.Email,
                 };
-                var userRoles = await _userManager.GetRolesAsync(user);
-                foreach(var role in userRoles)
+
+                var result = await _userManager.CreateAsync(user, model.Password);
+
+                if (result.Succeeded)
                 {
-                    authClaims.Add(new Claim(ClaimTypes.Role, role));
+                    await _signInManager.SignInAsync(user, isPersistent: false);
+
+                    return RedirectToAction("index", "Home");
                 }
-                var jwtToken = GetToken(authClaims);
 
-                return Ok(new { 
-                    token = new JwtSecurityTokenHandler().WriteToken(jwtToken),
-                    expiration = jwtToken.ValidTo
-                });
+                foreach (var error in result.Errors)
+                {
+                    ModelState.AddModelError("", error.Description);
+                }
+
+                ModelState.AddModelError(string.Empty, "Invalid Login Attempt");
+
             }
-            return Unauthorized();
+            return View(model);
         }
-        [HttpPost]
+        [HttpGet]
         [AllowAnonymous]
-       
-        public async Task<IActionResult> ForgotPassword([Required] string email)
-        {
-            var user = await _userManager.FindByEmailAsync(email);
-            if (user != null)
-            {
-                var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-                var ForgotPasswordlink = Url.Action(nameof(ResetPassword), "Auntheticate", new { token, email = user.Email }, Request.Scheme);
-                var message = new Message(new string[] { user.Email! }, "Forgot password link", ForgotPasswordlink!);
-                _emailService.SendEmail(message);
-                return StatusCode(StatusCodes.Status200OK,
-                       new Response { Status = "Success", Messange = $"Password change request is sent {user.Email}" });
-            }
-            return StatusCode(StatusCodes.Status400BadRequest,
-                       new Response { Status = "Error", Messange = $"Could send link " });
-        }
-
-        [HttpGet("reset-password")]
-        public async Task<IActionResult> ResetPassword(string token, string email)
-        {
-            var model = new ResetPassword { Token = token, Email = email };
-            return Ok(new
-            { 
-                model 
-            });
-        }
+        public IActionResult Login() { return View(); }
 
         [HttpPost]
         [AllowAnonymous]
-        [Route("reset-password")]
-        public async Task<IActionResult> ResetPassword (ResetPassword resetPassword)
+   
+        public async Task<IActionResult> Login(LoginUser user)
         {
-            var user = await _userManager.FindByEmailAsync(resetPassword.Email);
-            if (user != null)
+            if (ModelState.IsValid)
             {
-                var resetPassResult = await _userManager.ResetPasswordAsync(user, resetPassword.Token, resetPassword.Password);
-                if(!resetPassResult.Succeeded)
-                {
-                    foreach (var error in resetPassResult.Errors)
-                    {
-                        ModelState.AddModelError(error.Code, error.Description);
-                    }
-                    return Ok(ModelState);
-                }
-                return StatusCode(StatusCodes.Status200OK,
-                      new Response { Status = "Success", Messange = $"Password has been changed " });
-        }
-            return StatusCode(StatusCodes.Status400BadRequest,
-                      new Response { Status = "Error", Messange = $"Could send link " });
-        }
-        private JwtSecurityToken GetToken(List<Claim> authClaims)
-        {
-            var authSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JWT:Secret"]));
+                var result = await _signInManager.PasswordSignInAsync(user.Email, user.Password, user.RememberMe, false);
 
-            var token = new JwtSecurityToken(
-                issuer: _configuration["JWT:ValidIssuer"],
-                audience: _configuration["JWT:ValidAudience"],
-                expires: DateTime.Now.AddHours(1),
-                claims: authClaims,
-                signingCredentials: new SigningCredentials(authSigningKey,SecurityAlgorithms.HmacSha256));
-            return token;
+                if (result.Succeeded)
+                {
+                    return RedirectToAction("Index", "Home");
+                }
+
+                ModelState.AddModelError(string.Empty, "Invalid Login Attempt");
+
+            }
+            return View(user);
+        }
+        
+        [HttpGet]
+        public IActionResult ForgotPassword()
+        {
+            return View();
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ForgotPassword(ForgotPasswordModel forgotPasswordModel)
+        {
+            if (!ModelState.IsValid)
+                return View(forgotPasswordModel);
+
+            var user = await _userManager.FindByEmailAsync(forgotPasswordModel.Email);
+            if (user == null)
+                return RedirectToAction(nameof(ForgotPasswordConfirmation));
+
+            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+            var callback = Url.Action(nameof(ResetPassword), "Auntheticate", new { token, email = user.Email }, Request.Scheme);
+
+            var message = new Message(new string[] { user.Email }, "Reset password token", callback);
+            _emailService.SendEmail(message);
+
+            return RedirectToAction(nameof(ForgotPasswordConfirmation));
+        }
+
+        [HttpGet]
+        public IActionResult ForgotPasswordConfirmation()
+        {
+            return View();
+        }
+
+        [HttpGet]
+        public IActionResult ResetPassword(string token, string email)
+        {
+            var model = new ResetPasswordModel { Token = token, Email = email };
+            return View(model);
+        }
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ResetPassword(ResetPasswordModel resetPasswordModel)
+        {
+            if (!ModelState.IsValid)
+                return View(resetPasswordModel);
+            var user = await _userManager.FindByEmailAsync(resetPasswordModel.Email);
+            if (user == null)
+                RedirectToAction(nameof(ResetPasswordConfirmation));
+            var resetPassResult = await _userManager.ResetPasswordAsync(user, resetPasswordModel.Token, resetPasswordModel.Password);
+            if (!resetPassResult.Succeeded)
+            {
+                foreach (var error in resetPassResult.Errors)
+                {
+                    ModelState.TryAddModelError(error.Code, error.Description);
+                }
+                return View();
+            }
+            return RedirectToAction(nameof(ResetPasswordConfirmation));
+        }
+        [HttpGet]
+        public IActionResult ResetPasswordConfirmation()
+        {
+            return View();
         }
     }
 }
