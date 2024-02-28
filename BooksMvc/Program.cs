@@ -12,7 +12,7 @@ var builder = WebApplication.CreateBuilder(args);
 //for Entity framework
 var configuration = builder.Configuration;
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
+options.UseSqlServer(configuration.GetConnectionString("DeProfCodesDB")));
 
 //for identity
 builder.Services.AddIdentity<IdentityUser, IdentityRole>()

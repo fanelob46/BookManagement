@@ -24,24 +24,25 @@ namespace BooksMvc.Controllers
 {
     /*[Route("api/[controller]/[action]")]
     [ApiController]*/
-    public class AuntheticateController : Controller
+    public class AccountController : Controller
     {
         private readonly UserManager<IdentityUser> _userManager;
         private readonly SignInManager<IdentityUser> _signInManager;
         private readonly IEmailService _emailService;
 
-        public AuntheticateController(UserManager<IdentityUser> userManager,
-                              SignInManager<IdentityUser> signInManager ,IEmailService emailService)
+        public AccountController(UserManager<IdentityUser> userManager, SignInManager<IdentityUser> signInManager ,IEmailService emailService)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _emailService = emailService;
-
         }
 
+        [HttpGet]
+        public IActionResult Register() 
+        { 
+            return View(); 
+        }
 
-
-        public IActionResult Register() { return View(); }
         [HttpPost]
         public async Task<IActionResult> Register(RegisterUser model)
         {
@@ -72,13 +73,16 @@ namespace BooksMvc.Controllers
             }
             return View(model);
         }
+        
         [HttpGet]
         [AllowAnonymous]
-        public IActionResult Login() { return View(); }
+        public IActionResult Login() 
+        { 
+            return View(); 
+        }
 
         [HttpPost]
         [AllowAnonymous]
-   
         public async Task<IActionResult> Login(LoginUser user)
         {
             if (ModelState.IsValid)
@@ -107,11 +111,15 @@ namespace BooksMvc.Controllers
         public async Task<IActionResult> ForgotPassword(ForgotPasswordModel forgotPasswordModel)
         {
             if (!ModelState.IsValid)
+            { 
                 return View(forgotPasswordModel);
+            }
 
             var user = await _userManager.FindByEmailAsync(forgotPasswordModel.Email);
             if (user == null)
+            {
                 return RedirectToAction(nameof(ForgotPasswordConfirmation));
+            }
 
             var token = await _userManager.GeneratePasswordResetTokenAsync(user);
             var callback = Url.Action(nameof(ResetPassword), "Auntheticate", new { token, email = user.Email }, Request.Scheme);
@@ -131,18 +139,31 @@ namespace BooksMvc.Controllers
         [HttpGet]
         public IActionResult ResetPassword(string token, string email)
         {
-            var model = new ResetPasswordModel { Token = token, Email = email };
+            var model = new ResetPasswordModel 
+            { 
+                Token = token, 
+                Email = email 
+            };
+
             return View(model);
         }
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ResetPassword(ResetPasswordModel resetPasswordModel)
         {
             if (!ModelState.IsValid)
+            {
                 return View(resetPasswordModel);
+            }
+
             var user = await _userManager.FindByEmailAsync(resetPasswordModel.Email);
+
             if (user == null)
-                RedirectToAction(nameof(ResetPasswordConfirmation));
+            {
+                return RedirectToAction(nameof(ResetPasswordConfirmation));
+            }
+
             var resetPassResult = await _userManager.ResetPasswordAsync(user, resetPasswordModel.Token, resetPasswordModel.Password);
             if (!resetPassResult.Succeeded)
             {
@@ -154,6 +175,7 @@ namespace BooksMvc.Controllers
             }
             return RedirectToAction(nameof(ResetPasswordConfirmation));
         }
+
         [HttpGet]
         public IActionResult ResetPasswordConfirmation()
         {
