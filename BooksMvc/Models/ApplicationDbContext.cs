@@ -6,9 +6,9 @@ namespace BooksMvc.Models
 {
     public class ApplicationDbContext : IdentityDbContext<IdentityUser>
     {
-        public ApplicationDbContext(DbContextOptions<ApplicationDbContext>options) : base(options) 
+        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
         {
-                
+
         }
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -21,8 +21,13 @@ namespace BooksMvc.Models
             builder.Entity<IdentityRole>().HasData
                 (
                 new IdentityRole() { Name = "Admin", ConcurrencyStamp = "1", NormalizedName = "Admin" },
-                new IdentityRole() { Name = "user", ConcurrencyStamp = "2", NormalizedName = "user" }
+                new IdentityRole() { Name = "Manager", ConcurrencyStamp = "2", NormalizedName = "Manager" },
+                new IdentityRole() { Name = "HelpDesk", ConcurrencyStamp = "3", NormalizedName = "HelpDesk" },
+                new IdentityRole() { Name = "user", ConcurrencyStamp = "4", NormalizedName = "user" }
                 );
+            
         }
+
+       
     }
 }

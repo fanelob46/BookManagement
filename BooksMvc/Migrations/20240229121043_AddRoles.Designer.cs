@@ -4,6 +4,7 @@ using BooksMvc.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BooksMvc.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240229121043_AddRoles")]
+    partial class AddRoles
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -76,28 +79,28 @@ namespace BooksMvc.Migrations
                     b.HasData(
                         new
                         {
-                            Id = "ba5a9641-1a52-4e38-ad0b-1e0c549d7e0e",
+                            Id = "510315f0-0c38-4e0c-b03f-8435c1319b39",
                             ConcurrencyStamp = "1",
                             Name = "Admin",
                             NormalizedName = "Admin"
                         },
                         new
                         {
-                            Id = "91f74e3a-4761-4b75-8fe8-beab090e7e56",
+                            Id = "5ae4a66f-403c-4702-a89f-5ce01f800414",
                             ConcurrencyStamp = "2",
-                            Name = "Manager",
+                            Name = "user",
                             NormalizedName = "Manager"
                         },
                         new
                         {
-                            Id = "c6957c51-b837-4b4a-9580-982356d9783a",
+                            Id = "bebb8268-515e-42ad-9865-49145e5d5935",
                             ConcurrencyStamp = "3",
-                            Name = "HelpDesk",
+                            Name = "user",
                             NormalizedName = "HelpDesk"
                         },
                         new
                         {
-                            Id = "33e53f05-536b-473d-acb2-798c53d71b26",
+                            Id = "2fbab35b-51f4-4a5b-a119-b77a17df038a",
                             ConcurrencyStamp = "4",
                             Name = "user",
                             NormalizedName = "user"

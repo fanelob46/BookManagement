@@ -12,11 +12,12 @@ var builder = WebApplication.CreateBuilder(args);
 //for Entity framework
 var configuration = builder.Configuration;
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-options.UseSqlServer(configuration.GetConnectionString("DeProfCodesDB")));
+options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
 
 //for identity
 builder.Services.AddIdentity<IdentityUser, IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
+    .AddRoles<IdentityRole>()
     .AddDefaultTokenProviders();
 
 //Add Config for required email
@@ -80,5 +81,7 @@ app.UseAuthorization();
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
+
+
 
 app.Run();

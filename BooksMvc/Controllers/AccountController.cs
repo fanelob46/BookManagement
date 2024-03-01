@@ -22,8 +22,7 @@ using JwtRegisteredClaimNames = Microsoft.IdentityModel.JsonWebTokens.JwtRegiste
 
 namespace BooksMvc.Controllers
 {
-    /*[Route("api/[controller]/[action]")]
-    [ApiController]*/
+    
     public class AccountController : Controller
     {
         private readonly UserManager<IdentityUser> _userManager;
@@ -52,15 +51,22 @@ namespace BooksMvc.Controllers
                 {
                     UserName = model.Email,
                     Email = model.Email,
+                    
                 };
 
                 var result = await _userManager.CreateAsync(user, model.Password);
+                
 
                 if (result.Succeeded)
                 {
                     await _signInManager.SignInAsync(user, isPersistent: false);
 
                     return RedirectToAction("index", "Home");
+                }
+
+                if(model.Email == "Admin@admin.com")
+                {
+                    await _userManager.AddToRoleAsync(user, "Admin");
                 }
 
                 foreach (var error in result.Errors)
@@ -73,7 +79,7 @@ namespace BooksMvc.Controllers
             }
             return View(model);
         }
-        
+
         [HttpGet]
         [AllowAnonymous]
         public IActionResult Login() 
@@ -108,6 +114,7 @@ namespace BooksMvc.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        
         public async Task<IActionResult> ForgotPassword(ForgotPasswordModel forgotPasswordModel)
         {
             if (!ModelState.IsValid)
@@ -180,6 +187,12 @@ namespace BooksMvc.Controllers
         public IActionResult ResetPasswordConfirmation()
         {
             return View();
+        }
+        public async Task<IActionResult> Logout()
+        {
+            await _signInManager.SignOutAsync();
+
+            return RedirectToAction("Login");
         }
     }
 }
