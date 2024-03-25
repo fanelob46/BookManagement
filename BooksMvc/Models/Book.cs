@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.Drawing;
 
 namespace BooksMvc.Models
 {
@@ -6,6 +7,7 @@ namespace BooksMvc.Models
     {
         [Key]
         public int Id { get; set; }
+
         [Required]
         public string Name { get; set; }
         public string Author { get; set; }
@@ -13,6 +15,11 @@ namespace BooksMvc.Models
 
         public int Price { get; set; }
         public int LendingPrice { get; set; }
+
+        //public int CategoryId { get; set; }
+
+        //public virtual Category Category { get; set; }
+
 
     }
 }

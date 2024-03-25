@@ -1,4 +1,5 @@
 using BooksMvc.Models;
+using BooksMvc.Models.Roles;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -15,9 +16,9 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
 
 //for identity
-builder.Services.AddIdentity<IdentityUser, IdentityRole>()
+builder.Services.AddIdentity<IdentityUser, ApplicationRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
-    .AddRoles<IdentityRole>()
+    .AddRoles<ApplicationRole>()
     .AddDefaultTokenProviders();
 
 //Add Config for required email

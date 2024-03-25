@@ -7,23 +7,18 @@ namespace BooksMvc.Controllers
 {
     public class AdministrationController : Controller
     {
-        private readonly RoleManager<IdentityRole> _roleManager;
+        private readonly RoleManager<ApplicationRole> _roleManager;
         private readonly UserManager<IdentityUser> _userManager;
 
-        public AdministrationController(RoleManager<IdentityRole> roleManager, UserManager<IdentityUser> userManager)
+        public AdministrationController(RoleManager<ApplicationRole> roleManager, UserManager<IdentityUser> userManager)
         {
             _roleManager = roleManager;
             _userManager = userManager;
         }
         [HttpGet]
-        public IActionResult ListRole()
-        {
-            return View();
-        }
-        [HttpGet]
         public async Task<IActionResult> ListRoles()
         {
-            List<IdentityRole> roles = await _roleManager.Roles.ToListAsync();
+            List<ApplicationRole> roles = await _roleManager.Roles.ToListAsync();
             return View(roles);
         }
         [HttpGet]
@@ -51,7 +46,7 @@ namespace BooksMvc.Controllers
                     ApplicationRole identityRole = new ApplicationRole
                     {
                         Name = roleModel?.RoleName,
-                       // Description = roleModel?.Description
+                       Description = roleModel?.Description
                     };
                     IdentityResult result = await _roleManager.CreateAsync(identityRole);
                     if (result.Succeeded)
@@ -73,7 +68,7 @@ namespace BooksMvc.Controllers
         public async Task<IActionResult> EditRole(string roleId)
         {
             //First Get the role information from the database
-            IdentityRole role = await _roleManager.FindByIdAsync(roleId);
+            ApplicationRole role = await _roleManager.FindByIdAsync(roleId);
             if (role == null)
             {
                 // Handle the scenario when the role is not found
@@ -84,7 +79,9 @@ namespace BooksMvc.Controllers
             var model = new EditRoleViewModel
             {
                 Id = role.Id,
-                RoleName = role.Name 
+                RoleName = role.Name,
+                Description = role.Description
+                // You can add other properties here if needed
             };
 
             //Initialize the Users Property to avoid Null Reference Exception while Add the username
@@ -98,13 +95,15 @@ namespace BooksMvc.Controllers
                 // This model object is then passed to the view for display
                 if (await _userManager.IsInRoleAsync(user, role.Name))
                 {
-                    model.Users.Add(user.Email);
+                    model.Users.Add(user.UserName);
                 }
             }
 
             return View(model);
         }
-       
+
+        
+
         public IActionResult EditRole()
         {
             return View();
